@@ -17,6 +17,8 @@ urlpatterns = [
     path('tasks_recent_completed/', views.tasks_recent_completed, name='tasks_recen_completedt'),
     path('tasks_important_completed/', views.tasks_important_completed, name='tasks_important_completed'),
     #-----------------------------------------------------------------------------------------
+    path('stats/', views.stats, name='stats'),
+    path('stats/data/', views.stats_data, name='stats_data'),
     path('tasks/create/', views.create_task, name='create_task'),
     path('tasks/<int:task_id>/', views.task_detail, name='task_detail'),
     path('tasks/<int:task_id>/complete', views.complete_task, name='complete_task'),

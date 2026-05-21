@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<main class="container py-5">
+    <section class="card card-body">
+        <h1 class="display-1 text-center">Estadisticas</h1>
+        <form id="filterForm" method="get" class="row g-2 mb-3">
+            <div class="col-auto">
+                {{ form.start_date.label_tag }}
+                {{ form.start_date }}
+            </div>
+            <div class="col-auto">
+                {{ form.end_date.label_tag }}
+                {{ form.end_date }}
+            </div>
+            <div class="col-auto align-self-end">
+                <button type="submit" class="btn btn-primary">Filtrar</button>
+                <button type="button" id="clearBtn" class="btn btn-secondary">Limpiar</button>
+            </div>
+        </form>
+
+        <p>Tareas completadas: {{ completed_tasks }}</p>
+        <p>Tareas pendientes: {{ pending_tasks }}</p>
+
+        <p>Porcentaje de tareas completadas: {{ completion_percentage }}%</p>
+
+        <div class="mt-4">
+            <canvas id="completedChart" width="400" height="150"></canvas>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            const ctx = document.getElementById('completedChart').getContext('2d');
+            let completedChart = null;
+
+            function buildUrlWithParams() {
+                const params = new URLSearchParams();
+                const start = document.getElementById('id_start_date').value;
+                const end = document.getElementById('id_end_date').value;
+                if (start) params.append('start_date', start);
+                if (end) params.append('end_date', end);
+                return `/stats/data/?${params.toString()}`;
+            }
+
+            async function fetchDataAndRender() {
+                const url = buildUrlWithParams();
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const json = await res.json();
+                const labels = json.labels || [];
+                const data = json.data || [];
+
+                const config = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Tareas completadas',
+                            data: data,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: { display: true },
+                            y: { display: true, beginAtZero: true }
+                        }
+                    }
+                };
+
+                if (completedChart) {
+                    completedChart.data.labels = labels;
+                    completedChart.data.datasets[0].data = data;
+                    completedChart.update();
+                } else {
+                    completedChart = new Chart(ctx, config);
+                }
+            }
+
+            document.getElementById('filterForm').addEventListener('submit', function(e) {
+                // allow form to submit so URL updates; prevent full reload and fetch instead
+                e.preventDefault();
+                fetchDataAndRender();
+            });
+
+            document.getElementById('clearBtn').addEventListener('click', function() {
+                document.getElementById('id_start_date').value = '';
+                document.getElementById('id_end_date').value = '';
+                fetchDataAndRender();
+            });
+
+            // initial load
+            document.addEventListener('DOMContentLoaded', fetchDataAndRender);
+        </script>
+    </section>
+</main>
+
+{% endblock %}

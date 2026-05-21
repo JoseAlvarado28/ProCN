@@ -10,3 +10,8 @@ class TaskForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'Descripcion'}),
             'important': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+
+class StatsFilterForm(forms.Form):
+    start_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    end_date = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))

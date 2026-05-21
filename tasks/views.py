@@ -4,7 +4,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required 
 from django.db import IntegrityError 
-from .forms import TaskForm
+from .forms import TaskForm, StatsFilterForm
+from django.http import JsonResponse
+from django.db.models.functions import TruncDate
+from django.db.models import Count
 from .models import Task
 from django.utils import timezone
 
@@ -143,3 +146,49 @@ def tasks_recent_completed(request):
 def tasks_important_completed(request):
     tasks = Task.objects.filter(important=True, user = request.user, datecompleted__isnull=False).order_by('id')
     return render(request, 'tasks.html', {'tasks': tasks})
+
+
+@login_required
+def stats(request):
+    form = StatsFilterForm(request.GET or None)
+    completed_qs = Task.objects.filter(user=request.user, datecompleted__isnull=False)
+    pending_qs = Task.objects.filter(user=request.user, datecompleted__isnull=True)
+
+    if form.is_valid():
+        start = form.cleaned_data.get('start_date')
+        end = form.cleaned_data.get('end_date')
+        if start:
+            completed_qs = completed_qs.filter(datecompleted__date__gte=start)
+        if end:
+            completed_qs = completed_qs.filter(datecompleted__date__lte=end)
+
+    completed_tasks = completed_qs.count()
+    pending_tasks = pending_qs.count()
+    total = completed_tasks + pending_tasks
+    completion_percentage = int((completed_tasks / total) * 100) if total > 0 else 0
+
+    return render(request, 'stats.html', {
+        'completed_tasks': completed_tasks,
+        'pending_tasks': pending_tasks,
+        'completion_percentage': completion_percentage,
+        'form': form,
+    })
+
+
+@login_required
+def stats_data(request):
+    # Return JSON with labels (dates) and data (counts) for completed tasks
+    form = StatsFilterForm(request.GET or None)
+    completed_qs = Task.objects.filter(user=request.user, datecompleted__isnull=False)
+    if form.is_valid():
+        start = form.cleaned_data.get('start_date')
+        end = form.cleaned_data.get('end_date')
+        if start:
+            completed_qs = completed_qs.filter(datecompleted__date__gte=start)
+        if end:
+            completed_qs = completed_qs.filter(datecompleted__date__lte=end)
+
+    data_qs = completed_qs.annotate(day=TruncDate('datecompleted')).values('day').annotate(count=Count('id')).order_by('day')
+    labels = [item['day'].isoformat() for item in data_qs]
+    data = [item['count'] for item in data_qs]
+    return JsonResponse({'labels': labels, 'data': data})

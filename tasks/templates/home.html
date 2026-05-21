@@ -16,10 +16,14 @@
             aperiam dolorum vero nesciunt aut molestias ut! Adipisci, vel molestias atque porro voluptate deleniti est
             alias!</p>
 
-            <div class="text-center">
-                <a class="btn btn-dark" href="/signin/">Iniciar Sesion</a>
-                <a class="btn btn-secondary" href="/signup/">Registrarse</a>
-            </div>
+            {% if user.is_authenticated %}
+
+            {% else %}
+                <div class="text-center">
+                    <a class="btn btn-dark" href="/signin/">Iniciar Sesion</a>
+                    <a class="btn btn-secondary" href="/signup/">Registrarse</a>
+                </div>
+            {% endif %}
 
     </section>
 </main>
