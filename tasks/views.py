@@ -10,6 +10,8 @@ from django.db.models.functions import TruncDate
 from django.db.models import Count
 from .models import Task
 from django.utils import timezone
+from django.db.models import Q
+import datetime
 
 # Create your views here.
 def home(request):
@@ -109,22 +111,39 @@ def signin(request):
 
 @login_required
 def tasks(request):
-    tasks = Task.objects.filter(user = request.user, datecompleted__isnull=True)
+    today = timezone.now().date()
+    tasks = Task.objects.filter(
+        user=request.user,
+        datecompleted__isnull=True
+    ).filter(Q(scheduled_date__isnull=True) | Q(scheduled_date__lte=today))
     return render(request, 'tasks.html', {'tasks': tasks})
 
 @login_required
 def tasks_last(request):
-    tasks = Task.objects.filter(user = request.user, datecompleted__isnull=True).order_by('-id')
+    today = timezone.now().date()
+    tasks = Task.objects.filter(
+        user=request.user,
+        datecompleted__isnull=True
+    ).filter(Q(scheduled_date__isnull=True) | Q(scheduled_date__lte=today)).order_by('-id')
     return render(request, 'tasks.html', {'tasks': tasks})
 
 @login_required
 def tasks_recent(request):
-    tasks = Task.objects.filter(user = request.user, datecompleted__isnull=True).order_by('id')
+    today = timezone.now().date()
+    tasks = Task.objects.filter(
+        user=request.user,
+        datecompleted__isnull=True
+    ).filter(Q(scheduled_date__isnull=True) | Q(scheduled_date__lte=today)).order_by('id')
     return render(request, 'tasks.html', {'tasks': tasks})
 
 @login_required
 def tasks_important(request):
-    tasks = Task.objects.filter(important=True, user = request.user, datecompleted__isnull=True).order_by('id')
+    today = timezone.now().date()
+    tasks = Task.objects.filter(
+        important=True,
+        user=request.user,
+        datecompleted__isnull=True
+    ).filter(Q(scheduled_date__isnull=True) | Q(scheduled_date__lte=today)).order_by('id')
     return render(request, 'tasks.html', {'tasks': tasks})
 
 @login_required
@@ -179,16 +198,32 @@ def stats(request):
 def stats_data(request):
     # Return JSON with labels (dates) and data (counts) for completed tasks
     form = StatsFilterForm(request.GET or None)
-    completed_qs = Task.objects.filter(user=request.user, datecompleted__isnull=False)
+    # Determine date range (use form or default to last 7 days)
     if form.is_valid():
         start = form.cleaned_data.get('start_date')
         end = form.cleaned_data.get('end_date')
-        if start:
-            completed_qs = completed_qs.filter(datecompleted__date__gte=start)
-        if end:
-            completed_qs = completed_qs.filter(datecompleted__date__lte=end)
+    else:
+        start = None
+        end = None
 
-    data_qs = completed_qs.annotate(day=TruncDate('datecompleted')).values('day').annotate(count=Count('id')).order_by('day')
-    labels = [item['day'].isoformat() for item in data_qs]
-    data = [item['count'] for item in data_qs]
-    return JsonResponse({'labels': labels, 'data': data})
+    today = timezone.now().date()
+    if not end:
+        end = today
+    if not start:
+        start = end - datetime.timedelta(days=6)
+
+    # Build list of dates between start and end inclusive
+    num_days = (end - start).days + 1
+    labels_dates = [start + datetime.timedelta(days=i) for i in range(num_days)]
+
+    completed_data = []
+    pending_data = []
+
+    for d in labels_dates:
+        completed_count = Task.objects.filter(user=request.user, datecompleted__date=d).count()
+        pending_count = Task.objects.filter(user=request.user, created_at__date=d, datecompleted__isnull=True).count()
+        completed_data.append(completed_count)
+        pending_data.append(pending_count)
+
+    labels = [d.isoformat() for d in labels_dates]
+    return JsonResponse({'labels': labels, 'completed_data': completed_data, 'pending_data': pending_data})

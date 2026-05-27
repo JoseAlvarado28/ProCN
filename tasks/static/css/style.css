@@ -1,0 +1,77 @@
+/* Global design tokens - adjust to Instituto colors if available */
+:root{
+    --primary: #0b3d91; /* deep blue */
+    --accent: #f2a900;  /* warm gold */
+    --bg: #f8f9fa;
+    --muted: #6c757d;
+}
+
+body{
+    background: var(--bg);
+    color: #222;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.navbar-brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:600;
+}
+
+.navbar-brand img{
+    height:44px;
+}
+
+.navbar-dark .navbar-nav .nav-link{
+    color: rgba(255,255,255,0.9);
+}
+
+.navbar-dark.bg-dark{
+    background: linear-gradient(90deg, var(--primary), #07307a) !important;
+}
+
+.header-bar{
+    background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02));
+    padding: 12px 0;
+}
+
+.main-card{
+    background: #fff;
+    border-radius:8px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+    padding:20px;
+}
+
+.footer{
+    background:#fff;
+    border-top:1px solid #e9ecef;
+    padding:18px 0;
+    margin-top:30px;
+}
+
+.btn-primary{
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-accent{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0b1a2b;
+}
+
+.card-title{
+    color:var(--primary);
+    font-weight:600;
+}
+
+.container-main{
+    padding-top:28px;
+    padding-bottom:28px;
+}
+
+/* Responsive tweaks */
+@media (max-width:576px){
+    .navbar-brand img{height:36px}
+}

@@ -19,13 +19,27 @@
                 </div>
                 <div class="mb-3">
                     <label for="password1">Contraseña: </label>
-                    <input type="password" name="password1" id="password1" class="form-control" placeholder="Contraseña"
-                        required>
+                    <div class="input-group">
+                        <input type="password" name="password1" id="password1" class="form-control" placeholder="Contraseña" required>
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword1" aria-label="Mostrar contraseña">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8z"/>
+                                <path d="M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label for="password2">Confrimar Contraseña: </label>
-                    <input type="password" name="password2" id="password2" class="form-control"
-                        placeholder="Confirmar Contraseña" required>
+                    <div class="input-group">
+                        <input type="password" name="password2" id="password2" class="form-control" placeholder="Confirmar Contraseña" required>
+                        <button class="btn btn-outline-secondary" type="button" id="togglePassword2" aria-label="Mostrar contraseña">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8z"/>
+                                <path d="M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button class="btn btn-primary" type="submit">Registrarse</button>
@@ -35,3 +49,29 @@
 </main>
 
 {% endblock %}
+
+<script>
+    (function() {
+        function wire(toggleId, inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = document.getElementById(toggleId);
+            if (!input || !toggle) return;
+            const eyeSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">\n                                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8z"/>\n                                <path d="M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/>\n                            </svg>';
+            const eyeSlashSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">\n                                <path d="M13.359 11.238C12.203 12.134 10.67 13 8 13c-5 0-8-5-8-5 1.058-1.711 2.777-3.055 4.438-3.88L13.36 11.24z"/>\n                                <path d="M3.11 1.05 1.39 2.77l12.02 12.02 1.72-1.72L3.11 1.05z"/>\n                            </svg>';
+            toggle.addEventListener('click', function() {
+                const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+                input.setAttribute('type', type);
+                if (type === 'password') {
+                    toggle.innerHTML = eyeSvg;
+                    toggle.setAttribute('aria-label', 'Mostrar contraseña');
+                } else {
+                    toggle.innerHTML = eyeSlashSvg;
+                    toggle.setAttribute('aria-label', 'Ocultar contraseña');
+                }
+            });
+        }
+
+        wire('togglePassword1', 'password1');
+        wire('togglePassword2', 'password2');
+    })();
+</script>

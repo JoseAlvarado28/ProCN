@@ -26,7 +26,7 @@
         <p>Porcentaje de tareas completadas: {{ completion_percentage }}%</p>
 
         <div class="mt-4">
-            <canvas id="completedChart" width="400" height="150"></canvas>
+            <canvas id="completedChart" width="400" height="200"></canvas>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -49,21 +49,29 @@
                 if (!res.ok) return;
                 const json = await res.json();
                 const labels = json.labels || [];
-                const data = json.data || [];
+                const completed = json.completed_data || [];
+                const pending = json.pending_data || [];
 
                 const config = {
-                    type: 'line',
+                    type: 'bar',
                     data: {
                         labels: labels,
-                        datasets: [{
-                            label: 'Tareas completadas',
-                            data: data,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            fill: true,
-                        }]
+                        datasets: [
+                            {
+                                label: 'Completadas',
+                                data: completed,
+                                backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                            },
+                            {
+                                label: 'Pendientes (nuevas)',
+                                data: pending,
+                                backgroundColor: 'rgba(255, 99, 132, 0.7)'
+                            }
+                        ]
                     },
                     options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
                         scales: {
                             x: { display: true },
                             y: { display: true, beginAtZero: true }
@@ -73,7 +81,8 @@
 
                 if (completedChart) {
                     completedChart.data.labels = labels;
-                    completedChart.data.datasets[0].data = data;
+                    completedChart.data.datasets[0].data = completed;
+                    completedChart.data.datasets[1].data = pending;
                     completedChart.update();
                 } else {
                     completedChart = new Chart(ctx, config);
@@ -81,7 +90,6 @@
             }
 
             document.getElementById('filterForm').addEventListener('submit', function(e) {
-                // allow form to submit so URL updates; prevent full reload and fetch instead
                 e.preventDefault();
                 fetchDataAndRender();
             });
@@ -92,7 +100,6 @@
                 fetchDataAndRender();
             });
 
-            // initial load
             document.addEventListener('DOMContentLoaded', fetchDataAndRender);
         </script>
     </section>
