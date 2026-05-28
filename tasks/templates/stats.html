@@ -26,7 +26,9 @@
         <p>Porcentaje de tareas completadas: {{ completion_percentage }}%</p>
 
         <div class="mt-4">
-            <canvas id="completedChart" width="400" height="200"></canvas>
+            <div class="chart-container">
+                <canvas id="completedChart"></canvas>
+            </div>
         </div>
 
         <!-- Modal para mostrar tareas por barra -->
@@ -106,6 +108,7 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
                             tooltip: {
