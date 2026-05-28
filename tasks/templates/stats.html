@@ -29,6 +29,23 @@
             <canvas id="completedChart" width="400" height="200"></canvas>
         </div>
 
+        <!-- Modal para mostrar tareas por barra -->
+        <div class="modal fade" id="tasksModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Tareas</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body" id="tasksModalBody">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
             const ctx = document.getElementById('completedChart').getContext('2d');
@@ -57,12 +74,13 @@
                 const createdTitles = json.created_titles || [];
                 const scheduledTitles = json.scheduled_titles || [];
 
-                // Store titles for tooltip access
-                window.statTitles = {
-                    completed: completedTitles,
-                    created: createdTitles,
-                    scheduled: scheduledTitles
-                };
+                const completedItems = json.completed_items || [];
+                const createdItems = json.created_items || [];
+                const scheduledItems = json.scheduled_items || [];
+
+                // Store titles and items for tooltip and modal access
+                window.statTitles = { completed: completedTitles, created: createdTitles, scheduled: scheduledTitles };
+                window.statItems = { completed: completedItems, created: createdItems, scheduled: scheduledItems };
 
                 const config = {
                     type: 'bar',
@@ -129,6 +147,41 @@
                 } else {
                     completedChart = new Chart(ctx, config);
                 }
+                // Añadir manejador de clics para abrir modal con la lista de tareas
+                const canvas = document.getElementById('completedChart');
+                canvas.onclick = function(evt) {
+                    if (!completedChart) return;
+                    const points = completedChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+                    if (!points.length) return;
+                    const p = points[0];
+                    const ds = p.datasetIndex;
+                    const idx = p.index;
+                    let items = [];
+                    if (ds === 0) items = window.statItems.completed[idx] || [];
+                    else if (ds === 1) items = window.statItems.created[idx] || [];
+                    else if (ds === 2) items = window.statItems.scheduled[idx] || [];
+
+                    let html = '';
+                    if (!items.length) {
+                        html = '<p>No hay tareas para esta barra.</p>';
+                    } else {
+                        html = '<ul class="list-group">';
+                        items.forEach(it => {
+                            const url = `/tasks/${it.id}/`;
+                            let badge = '<span class="badge bg-secondary ms-2">Pendiente</span>';
+                            if (it.datecompleted) badge = '<span class="badge bg-success ms-2">Completada</span>';
+                            else if (it.scheduled_date) badge = '<span class="badge bg-warning ms-2">Programada</span>';
+                            html += `<li class="list-group-item"><a href="${url}">${it.title}</a> ${badge}`;
+                            if (it.created_at) html += ` <small class="text-muted ms-2">(${it.created_at.split('T')[0]})</small>`;
+                            html += '</li>';
+                        });
+                        html += '</ul>';
+                    }
+
+                    document.getElementById('tasksModalBody').innerHTML = html;
+                    const modal = new bootstrap.Modal(document.getElementById('tasksModal'));
+                    modal.show();
+                };
             }
 
             document.getElementById('filterForm').addEventListener('submit', function(e) {

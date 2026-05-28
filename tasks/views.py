@@ -223,21 +223,55 @@ def stats_data(request):
     completed_titles = []
     created_titles = []
     scheduled_titles = []
+    completed_items = []
+    created_items = []
+    scheduled_items = []
 
     for d in labels_dates:
-        completed_qs = Task.objects.filter(user=request.user, datecompleted__date=d)
+        # Todas las tareas creadas en la fecha `d`
+        created_qs = Task.objects.filter(user=request.user, created_at__date=d)
+
+        # Completadas (fueron creadas ese día y ya tienen fecha de completado)
+        completed_qs = created_qs.filter(datecompleted__isnull=False)
         completed_count = completed_qs.count()
         completed_titles.append(list(completed_qs.values_list('title', flat=True)))
+        completed_items.append([
+            {
+                'id': t.id,
+                'title': t.title,
+                'created_at': t.created_at.isoformat() if t.created_at else None,
+                'scheduled_date': t.scheduled_date.isoformat() if t.scheduled_date else None,
+                'datecompleted': t.datecompleted.isoformat() if t.datecompleted else None,
+            } for t in completed_qs
+        ])
 
-        # Tareas creadas ese día y aún pendientes (no programadas)
-        created_qs = Task.objects.filter(user=request.user, created_at__date=d, datecompleted__isnull=True, scheduled_date__isnull=True)
-        created_pending_data.append(created_qs.count())
-        created_titles.append(list(created_qs.values_list('title', flat=True)))
+        # Pendientes creadas ese día (no completadas y no programadas)
+        pending_qs = created_qs.filter(datecompleted__isnull=True, scheduled_date__isnull=True)
+        created_pending_data.append(pending_qs.count())
+        created_titles.append(list(pending_qs.values_list('title', flat=True)))
+        created_items.append([
+            {
+                'id': t.id,
+                'title': t.title,
+                'created_at': t.created_at.isoformat() if t.created_at else None,
+                'scheduled_date': t.scheduled_date.isoformat() if t.scheduled_date else None,
+                'datecompleted': t.datecompleted.isoformat() if t.datecompleted else None,
+            } for t in pending_qs
+        ])
 
-        # Tareas programadas para esa fecha y aún pendientes
-        scheduled_qs = Task.objects.filter(user=request.user, scheduled_date=d, datecompleted__isnull=True)
+        # Pendientes programadas creadas ese día (no completadas y con scheduled_date)
+        scheduled_qs = created_qs.filter(datecompleted__isnull=True, scheduled_date__isnull=False)
         scheduled_data.append(scheduled_qs.count())
         scheduled_titles.append(list(scheduled_qs.values_list('title', flat=True)))
+        scheduled_items.append([
+            {
+                'id': t.id,
+                'title': t.title,
+                'created_at': t.created_at.isoformat() if t.created_at else None,
+                'scheduled_date': t.scheduled_date.isoformat() if t.scheduled_date else None,
+                'datecompleted': t.datecompleted.isoformat() if t.datecompleted else None,
+            } for t in scheduled_qs
+        ])
 
         completed_data.append(completed_count)
 
@@ -250,4 +284,7 @@ def stats_data(request):
         'completed_titles': completed_titles,
         'created_titles': created_titles,
         'scheduled_titles': scheduled_titles,
+        'completed_items': completed_items,
+        'created_items': created_items,
+        'scheduled_items': scheduled_items,
     })
