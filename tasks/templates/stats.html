@@ -50,7 +50,19 @@
                 const json = await res.json();
                 const labels = json.labels || [];
                 const completed = json.completed_data || [];
-                const pending = json.pending_data || [];
+                const created = json.created_pending_data || [];
+                const scheduled = json.scheduled_data || [];
+
+                const completedTitles = json.completed_titles || [];
+                const createdTitles = json.created_titles || [];
+                const scheduledTitles = json.scheduled_titles || [];
+
+                // Store titles for tooltip access
+                window.statTitles = {
+                    completed: completedTitles,
+                    created: createdTitles,
+                    scheduled: scheduledTitles
+                };
 
                 const config = {
                     type: 'bar',
@@ -63,8 +75,13 @@
                                 backgroundColor: 'rgba(75, 192, 192, 0.7)'
                             },
                             {
-                                label: 'Pendientes (nuevas)',
-                                data: pending,
+                                label: 'Pendientes (creadas)',
+                                data: created,
+                                backgroundColor: 'rgba(255, 159, 64, 0.8)'
+                            },
+                            {
+                                label: 'Programadas',
+                                data: scheduled,
                                 backgroundColor: 'rgba(255, 99, 132, 0.7)'
                             }
                         ]
@@ -72,6 +89,30 @@
                     options: {
                         responsive: true,
                         interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const dsIndex = context.datasetIndex;
+                                        const idx = context.dataIndex;
+                                        const value = context.parsed.y;
+                                        let titles = [];
+                                        if (dsIndex === 0) titles = window.statTitles.completed[idx] || [];
+                                        else if (dsIndex === 1) titles = window.statTitles.created[idx] || [];
+                                        else if (dsIndex === 2) titles = window.statTitles.scheduled[idx] || [];
+
+                                        const lines = [];
+                                        lines.push(context.dataset.label + ': ' + value);
+                                        if (titles.length) {
+                                            lines.push('Tareas:');
+                                            titles.slice(0, 8).forEach(t => lines.push('- ' + t));
+                                            if (titles.length > 8) lines.push('...');
+                                        }
+                                        return lines;
+                                    }
+                                }
+                            }
+                        },
                         scales: {
                             x: { display: true },
                             y: { display: true, beginAtZero: true }
@@ -82,7 +123,8 @@
                 if (completedChart) {
                     completedChart.data.labels = labels;
                     completedChart.data.datasets[0].data = completed;
-                    completedChart.data.datasets[1].data = pending;
+                    completedChart.data.datasets[1].data = created;
+                    completedChart.data.datasets[2].data = scheduled;
                     completedChart.update();
                 } else {
                     completedChart = new Chart(ctx, config);

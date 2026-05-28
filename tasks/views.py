@@ -217,13 +217,37 @@ def stats_data(request):
     labels_dates = [start + datetime.timedelta(days=i) for i in range(num_days)]
 
     completed_data = []
-    pending_data = []
+    created_pending_data = []
+    scheduled_data = []
+
+    completed_titles = []
+    created_titles = []
+    scheduled_titles = []
 
     for d in labels_dates:
-        completed_count = Task.objects.filter(user=request.user, datecompleted__date=d).count()
-        pending_count = Task.objects.filter(user=request.user, created_at__date=d, datecompleted__isnull=True).count()
+        completed_qs = Task.objects.filter(user=request.user, datecompleted__date=d)
+        completed_count = completed_qs.count()
+        completed_titles.append(list(completed_qs.values_list('title', flat=True)))
+
+        # Tareas creadas ese día y aún pendientes (no programadas)
+        created_qs = Task.objects.filter(user=request.user, created_at__date=d, datecompleted__isnull=True, scheduled_date__isnull=True)
+        created_pending_data.append(created_qs.count())
+        created_titles.append(list(created_qs.values_list('title', flat=True)))
+
+        # Tareas programadas para esa fecha y aún pendientes
+        scheduled_qs = Task.objects.filter(user=request.user, scheduled_date=d, datecompleted__isnull=True)
+        scheduled_data.append(scheduled_qs.count())
+        scheduled_titles.append(list(scheduled_qs.values_list('title', flat=True)))
+
         completed_data.append(completed_count)
-        pending_data.append(pending_count)
 
     labels = [d.isoformat() for d in labels_dates]
-    return JsonResponse({'labels': labels, 'completed_data': completed_data, 'pending_data': pending_data})
+    return JsonResponse({
+        'labels': labels,
+        'completed_data': completed_data,
+        'created_pending_data': created_pending_data,
+        'scheduled_data': scheduled_data,
+        'completed_titles': completed_titles,
+        'created_titles': created_titles,
+        'scheduled_titles': scheduled_titles,
+    })
