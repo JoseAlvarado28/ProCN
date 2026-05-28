@@ -7,7 +7,7 @@ from django.db import IntegrityError
 from .forms import TaskForm, StatsFilterForm
 from django.http import JsonResponse
 from django.db.models.functions import TruncDate
-from django.db.models import Count
+from django.db.models import Count, Min
 from .models import Task
 from django.utils import timezone
 from django.db.models import Q
@@ -209,8 +209,15 @@ def stats_data(request):
     today = timezone.now().date()
     if not end:
         end = today
+
+    # Si no se especifica `start`, usar la fecha de la primera tarea creada por el usuario
     if not start:
-        start = end - datetime.timedelta(days=6)
+        earliest = Task.objects.filter(user=request.user).aggregate(first=Min('created_at'))['first']
+        if earliest:
+            start = earliest.date()
+        else:
+            # Si no hay tareas, mostrar último rango de 7 días
+            start = end - datetime.timedelta(days=6)
 
     # Build list of dates between start and end inclusive
     num_days = (end - start).days + 1
